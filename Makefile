@@ -1,6 +1,6 @@
 PROGRAM=anasm
-SOURCES=main.cc lexer.cc parser.cc
-OBJECTS=parser.o lexer.o main.o
+SOURCES=main.cc lexer.cc parser.cc driver.cc
+OBJECTS=parser.o driver.o lexer.o main.o
 LEX_OUT=lexer.cc
 BISON_OUT=parser.cc parser.hh parser.output location.hh position.hh stack.hh
 
@@ -17,7 +17,7 @@ LIBS=
 all: $(PROGRAM)
 
 .cc.o:
-	$(CXX) $(CFLAGS) -c -o $*.o $<
+	$(CXX) $(CXXFLAGS) -c -o $*.o $<
 
 .l.cc:
 	$(LEX) -+ -o$*.cc $<
@@ -40,6 +40,8 @@ parser.hh: parser.yy
 lexer.o: lexer.cc
 
 parser.o: parser.cc
+
+driver.o: driver.cc
 
 main.o: main.cc
 

@@ -1,34 +1,28 @@
 %{
-
-#include <iostream>
-#include <string>
-#include <cstdio>
 #include <cstdlib>
+#include <string>
+#include "driver.hh"
+#include "parser.hh"
 #include "lexer.hh"
 
-using namespace std;
-
-// Prevent using unistd.h
 #define YY_NO_UNISTD_H
 
-// Re-define YY_DECL
 #undef YY_DECL
-#define YY_DECL int AnASM::Lexer::yylex(AnASM::Parser::semantic_type *lval, AnASM::Parser::location_type *loc)
+#define YY_DECL AnASM::Parser::symbol_type AnASM::Lexer::yylex(AnASM::Driver &driver)
 
-// Shorter alias for token type
-using token = AnASM::Parser::token;
+#undef yywrap
+#define yywrap() 1
 
-// define yyterminate() to return END token
-#define yyterminate() return(token::END)
-
-// Update location
-#define YY_USER_ACTION loc->step(); loc->columns(yyleng);
-
+static AnASM::location loc;
 %}
 
 %option yyclass="AnASM::Lexer"
 %option c++
 %option noyywrap nounput batch debug noinput
+
+%{
+  #define YY_USER_ACTION loc.columns(yyleng);
+%}
 
 delimiter  [ \t]
 whitespace {delimiter}+
@@ -40,20 +34,24 @@ register   [rR]{digit}+
 identifier [a-zA-Z_][a-zA-Z0-9_]*
 
 %%
+%{
+  loc.step();
+%}
 
-{register}  { lval->build<int>() = atoi(YYText() + 1) ; return token::REGISTER; }
-{integer}   { lval->build<int>() = atoi(YYText()); return token::INTEGER; }
+{register}  { return AnASM::Parser::make_REGISTER(atoi(yytext + 1), loc); }
+{integer}   { return AnASM::Parser::make_INTEGER(atoi(yytext), loc); }
 
-\n        { return token::NEWLINE; }
-,         { return token::COMMA; }
-:         { return token::COLON; }
+,         { return AnASM::Parser::make_COMMA(loc); }
+:         { return AnASM::Parser::make_COLON(loc); }
 
-"LOAD"    { return token::LOAD; }
-"ADD"     { return token::ADD; }
-"OUT"     { return token::OUT; }
-"HALT"    { return token::HALT; }
+"LOAD"    { return AnASM::Parser::make_LOAD(loc); }
+"ADD"     { return AnASM::Parser::make_ADD(loc); }
+"OUT"     { return AnASM::Parser::make_OUT(loc); }
+"HALT"    { return AnASM::Parser::make_HALT(loc); }
+<<EOF>>   { return AnASM::Parser::make_END(loc); }
 
-{whitespace} { /* Do noting */ }
+{whitespace} { loc.step(); }
+\n           { loc.lines(yyleng); loc.step(); return AnASM::Parser::make_NEWLINE(loc); }
 
 %%
 

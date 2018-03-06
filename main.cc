@@ -1,19 +1,20 @@
 #include <iostream>
-#include "parser.hh"
-#include "lexer.hh"
+#include <cstdlib>
+#include <string>
+#include "driver.hh"
 
-using namespace std;
-
-int main()
+int main(const int argc, const char **argv)
 {
-  AnASM::Lexer lexer(&cin);
-  AnASM::Parser parser(lexer);
+  // TODO: implement user-specified filename argument
 
-  // Un-comment the following line for parser debugging
-  // parser.set_debug_level(1);
+  AnASM::Driver driver;
 
-  int result = parser.parse();
+  if (driver.parse(std::cin))
+  {
+    std::clog << "Success" << std::endl;
+    exit(EXIT_SUCCESS);
+  }
 
-  exit(EXIT_SUCCESS);
+  exit(EXIT_FAILURE);
 }
 

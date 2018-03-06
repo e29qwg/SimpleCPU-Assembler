@@ -1,71 +1,73 @@
-%skeleton "lalr1.cc" /* -*- C++ -*- */
+%skeleton "lalr1.cc"
 %require "3.0.4"
 %defines
 %define api.namespace {AnASM}
 %define parser_class_name {Parser}
-
-/* Debugging */
-%verbose
-%define parse.trace
-
-%parse-param { Lexer &lexer }
-/* %parse-param { Driver &driver } */
-
+%define api.token.constructor
 %define api.value.type variant
-/* %define parse.assert */
+%define parse.assert
+
+%code requires
+{
+#include <iostream>
+#include <string>
+
+namespace AnASM
+{
+  class Driver;
+  class Lexer;
+}
+}
+
+%parse-param { AnASM::Lexer &lexer }
+%param { AnASM::Driver &driver }
 
 %locations
 
-%code requires{
-  namespace AnASM {
-    // class Driver;
-    class Lexer;
-  }
+%initial-action
+{
+  // @$.begin.filename = @$.end.filename = &driver.file;
+};
 
-// The following definitions is missing when %locations isn't used
-# ifndef YY_NULLPTR
-#  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULLPTR nullptr
-#  else
-#   define YY_NULLPTR 0
-#  endif
-# endif
+%define parse.trace
+%define parse.error verbose
 
-}
-
-%{
-#include <iostream>
-#include <string>
+%code
+{
+#include "driver.hh"
 #include "lexer.hh"
-
-// TODO: Construct a symbol hash map
 
 #undef yylex
 #define yylex lexer.yylex
-%}
+}
 
-/* General Tokens */
-%token END 0 "end of file"
-%token NEWLINE COMMA COLON IDENTIFIER
-%token <int> REGISTER
-%token <int> INTEGER
+%define api.token.prefix {TOK_}
 
-/* CPU Mnemonic Tokens */
-%token LOAD ADD OUT HALT
+%token
+  END 0 "end of file"
+  NEWLINE "new line"
+  COMMA "comma"
+  COLON "colon"
+  LOAD  "LOAD"
+  ADD   "ADD"
+  OUT   "OUT"
+  HALT  "HALT"
+
+%token <int> REGISTER "register"
+%token <int> INTEGER "integer"
 
 %printer { yyoutput << $$; } <*>;
 
 %%
-
 %start program;
 
 program: END
-       | line END
+       | statements END
        ;
 
-line: statement
-    | line statement
-    ;
+statements: statement
+          | statements statement
+          ;
 
 statement: LOAD REGISTER COMMA INTEGER {
              std::cout << "R" << $2 << " <- " << $4 << std::endl; }
@@ -82,5 +84,6 @@ statement: LOAD REGISTER COMMA INTEGER {
 
 void AnASM::Parser::error(const location_type &l, const std::string &m)
 {
-  std::cerr << l << ": " << m << std::endl;
+  driver.error(l, m);
 }
+

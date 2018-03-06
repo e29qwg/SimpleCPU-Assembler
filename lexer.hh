@@ -8,6 +8,9 @@
 #include "parser.hh"
 #include "location.hh"
 
+#undef YY_DECL
+#define YY_DECL AnASM::Parser::symbol_type AnASM::Lexer::yylex(AnASM::Driver &driver)
+
 namespace AnASM
 {
   class Lexer : public yyFlexLexer
@@ -16,9 +19,7 @@ namespace AnASM
       Lexer(std::istream *in) : yyFlexLexer(in) { };
       virtual ~Lexer() { };
 
-      using FlexLexer::yylex;
-
-      virtual int yylex(AnASM::Parser::semantic_type *lval, AnASM::Parser::location_type *loc);
+      virtual AnASM::Parser::symbol_type yylex(AnASM::Driver &driver);
 
     private:
       AnASM::Parser::semantic_type *yylval = nullptr;
