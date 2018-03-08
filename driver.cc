@@ -5,9 +5,19 @@
 #include "driver.hh"
 #include "parser.hh"
 
-AnASM::Driver::Driver() : trace_scanning(false), trace_parsing(false) { }
+AnASM::Driver::Driver() :
+  file("stdin"),
+  loc(new AnASM::location(&file)),
+  trace_scanning(false),
+  trace_parsing(false)
+{ }
 
 AnASM::Driver::~Driver() { }
+
+bool AnASM::Driver::parse()
+{
+  return parse(file);
+}
 
 bool AnASM::Driver::parse(const std::string &f)
 {
@@ -19,6 +29,8 @@ bool AnASM::Driver::parse(const std::string &f)
     return false;
   }
 
+  file = f;
+
   return parse(in_file);
 }
 
@@ -29,6 +41,8 @@ bool AnASM::Driver::parse(std::istream &is)
 
   delete(lexer);
   delete(parser);
+
+  loc->initialize(&file);
 
   try
   {
@@ -44,7 +58,7 @@ bool AnASM::Driver::parse(std::istream &is)
 
   try
   {
-    parser = new AnASM::Parser(*lexer, *this);
+    parser = new AnASM::Parser(*this);
     
     parser->set_debug_level(trace_parsing);
   }

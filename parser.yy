@@ -19,14 +19,13 @@ namespace AnASM
 }
 }
 
-%parse-param { AnASM::Lexer &lexer }
 %param { AnASM::Driver &driver }
 
 %locations
 
 %initial-action
 {
-  // @$.begin.filename = @$.end.filename = &driver.file;
+  @$.begin.filename = @$.end.filename = &driver.file;
 };
 
 %define parse.trace
@@ -38,7 +37,7 @@ namespace AnASM
 #include "lexer.hh"
 
 #undef yylex
-#define yylex lexer.yylex
+#define yylex driver.lexer->yylex
 }
 
 %define api.token.prefix {TOK_}
@@ -48,13 +47,26 @@ namespace AnASM
   NEWLINE "new line"
   COMMA "comma"
   COLON "colon"
+
+/* CPU Mnemonics */
+%token
   LOAD  "LOAD"
   ADD   "ADD"
+  SUB   "SUB"
+  OR    "OR"
+  XOR   "XOR"
+  BRA   "BRA"
+  BRAZ  "BRAZ"
+  BRAL  "BRAL"
+  BRALZ "BRALZ"
+  CALL  "CALL"
+  IN    "IN"
   OUT   "OUT"
   HALT  "HALT"
 
 %token <int> REGISTER "register"
 %token <int> INTEGER "integer"
+%token <std::string> IDENTIFIER "identifier"
 
 %printer { yyoutput << $$; } <*>;
 
@@ -74,9 +86,22 @@ statement: LOAD REGISTER COMMA INTEGER {
          | ADD REGISTER COMMA REGISTER COMMA REGISTER { 
              std::cout << "R" << $2 << " <- " <<
                           "R" << $4 << " + R" << $6 << std::endl; }
+         | SUB REGISTER COMMA REGISTER COMMA REGISTER
+         | OR REGISTER COMMA REGISTER COMMA REGISTER
+         | XOR REGISTER COMMA REGISTER COMMA REGISTER
+         | BRA REGISTER
+         | BRAZ REGISTER COMMA REGISTER
+         | BRAL INTEGER
+         | BRAL IDENTIFIER
+         | BRALZ REGISTER COMMA INTEGER
+         | BRALZ REGISTER COMMA IDENTIFIER
+         | CALL REGISTER COMMA INTEGER
+         | CALL REGISTER COMMA IDENTIFIER
+         | IN REGISTER
          | OUT REGISTER { 
              std::cout << "OUT R" << $2 << std::endl; }
          | HALT { std::cout << "HALT" << std::endl; }
+         | IDENTIFIER COLON
          | NEWLINE
          ;
 
@@ -84,6 +109,6 @@ statement: LOAD REGISTER COMMA INTEGER {
 
 void AnASM::Parser::error(const location_type &l, const std::string &m)
 {
-  driver.error(l, m);
+  driver.error(*(driver.loc), m);
 }
 

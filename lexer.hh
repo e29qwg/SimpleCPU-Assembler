@@ -20,9 +20,6 @@ namespace AnASM
       virtual ~Lexer() { };
 
       virtual AnASM::Parser::symbol_type yylex(AnASM::Driver &driver);
-
-    private:
-      AnASM::Parser::semantic_type *yylval = nullptr;
   };
 }
 
